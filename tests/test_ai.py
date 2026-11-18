@@ -69,3 +69,37 @@ async def test_analyze_refusal():
     client, _ = fake_client(resp)
     with pytest.raises(AnalysisError):
         await FoodAnalyzer("key", client=client).analyze(b"x")
+
+
+def _bad_request(msg):
+    import anthropic, httpx2
+    req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    resp = httpx2.Response(400, request=req, json={"type": "error", "error": {"type": "invalid_request_error", "message": msg}})
+    return anthropic.BadRequestError(msg, response=resp, body=None)
+
+
+async def test_credit_balance_message():
+    class M:
+        async def create(self, **kw):
+            raise _bad_request("Your credit balance is too low to access the Anthropic API.")
+    client = SimpleNamespace(beta=SimpleNamespace(messages=M()), messages=M())
+    with pytest.raises(AnalysisError, match="mablag'"):
+        await FoodAnalyzer("k", client=client).analyze(b"x")
+
+
+async def test_retries_without_fallbacks():
+    ok = SimpleNamespace(stop_reason="end_turn", stop_details=None,
+                         content=[SimpleNamespace(type="text", text=json.dumps(SAMPLE))])
+
+    class Beta:
+        async def create(self, **kw):
+            raise _bad_request("fallbacks: unexpected parameter")
+
+    class Plain:
+        kwargs = None
+        async def create(self, **kw):
+            Plain.kwargs = kw
+            return ok
+    client = SimpleNamespace(beta=SimpleNamespace(messages=Beta()), messages=Plain())
+    a = await FoodAnalyzer("k", client=client).analyze(b"x")
+    assert a.title == "Osh" and "fallbacks" not in Plain.kwargs

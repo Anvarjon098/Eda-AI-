@@ -110,31 +110,47 @@ class FoodAnalyzer:
             text += f"\nFoydalanuvchi izohi: {caption.strip()[:500]}"
         content.append({"type": "text", "text": text})
 
+        request = dict(
+            model=self.model,
+            max_tokens=16000,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": content}],
+            output_config={"effort": "medium", "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}},
+        )
         try:
-            response = await self.client.beta.messages.create(
-                model=self.model,
-                max_tokens=16000,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": content}],
-                output_config={"effort": "medium", "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}},
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
-            )
+            try:
+                response = await self.client.beta.messages.create(
+                    **request,
+                    betas=["server-side-fallback-2026-07-01"],
+                    fallbacks="default",
+                )
+            except anthropic.BadRequestError as e:
+                # Hisobda fallback beta yoqilmagan bo'lsa yoki model uni qo'llamasa — fallback'siz qayta so'raymiz
+                if "fallback" not in str(e).lower() and "beta" not in str(e).lower():
+                    raise
+                log.warning("Fallback'siz qayta so'ralmoqda: %s", e)
+                response = await self.client.messages.create(**request)
         except anthropic.RateLimitError as e:
             log.warning("Claude rate limit: %s", e)
             raise AnalysisError("Hozir so'rovlar juda ko'p. Bir daqiqadan keyin qayta urinib ko'ring.") from e
         except anthropic.BadRequestError as e:
             log.error("Claude bad request: %s", e)
-            raise AnalysisError("Rasmni qayta ishlab bo'lmadi. Boshqa rasm yuborib ko'ring.") from e
+            raise AnalysisError(bad_request_message(str(e))) from e
         except anthropic.AuthenticationError as e:
             log.error("Claude API kaliti noto'g'ri: %s", e)
-            raise AnalysisError("Bot sozlamalarida xatolik bor. Administratorga xabar bering.") from e
+            raise AnalysisError("ANTHROPIC_API_KEY noto'g'ri. Administrator .env faylidagi kalitni tekshirsin.") from e
+        except anthropic.PermissionDeniedError as e:
+            log.error("Claude API ruxsat yo'q: %s", e)
+            raise AnalysisError("API kalitiga bu modeldan foydalanishga ruxsat yo'q. Administratorga xabar bering.") from e
+        except anthropic.NotFoundError as e:
+            log.error("Claude modeli topilmadi (%s): %s", self.model, e)
+            raise AnalysisError(f"«{self.model}» modeli topilmadi. .env dagi CLAUDE_MODEL ni tekshiring.") from e
         except anthropic.APIStatusError as e:
             log.error("Claude API xatosi %s: %s", e.status_code, e)
             raise AnalysisError("AI xizmatida vaqtinchalik nosozlik. Birozdan keyin urinib ko'ring.") from e
         except anthropic.APIConnectionError as e:
             log.error("Claude bilan aloqa yo'q: %s", e)
-            raise AnalysisError("AI xizmatiga ulanib bo'lmadi. Birozdan keyin urinib ko'ring.") from e
+            raise AnalysisError("AI xizmatiga ulanib bo'lmadi. Server internetini tekshiring.") from e
 
         if response.stop_reason == "refusal":
             log.warning("Claude refusal: %s", response.stop_details)
@@ -144,6 +160,16 @@ class FoodAnalyzer:
 
         raw = next((b.text for b in response.content if b.type == "text"), "")
         return parse_analysis(raw)
+
+
+def bad_request_message(error: str) -> str:
+    e = error.lower()
+    if "credit balance" in e or "billing" in e:
+        return ("Claude API hisobida mablag' qolmagan. Administrator platform.claude.com → "
+                "Billing bo'limida balansni to'ldirishi kerak.")
+    if "image" in e:
+        return "Rasmni o'qib bo'lmadi. Boshqa rasm yuborib ko'ring (JPG yoki PNG)."
+    return "AI so'rovni qabul qilmadi. Administrator bot loglarini tekshirsin."
 
 
 def parse_analysis(raw: str) -> FoodAnalysis:
