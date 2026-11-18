@@ -54,6 +54,18 @@ nano .env          # BOT_TOKEN va ANTHROPIC_API_KEY ni yozing
 
 Xarajatni kamaytirish uchun `CLAUDE_MODEL=claude-sonnet-5-5` qilib qo'yish mumkin. Bu model arzonroq, lekin biroz kamroq aniq.
 
+### Root huquqisiz serverda (fonda ishlatish)
+
+`sudo` va `systemd` bo'lmagan serverlarda (masalan, bepul konteynerlarda) quyidagi skriptlardan foydalaning.
+Bot terminal yopilganda ham ishlayveradi va xato bilan to'xtasa, o'zi qayta ishga tushadi.
+
+| Buyruq | Vazifasi |
+|---|---|
+| `scripts/start.sh` | Botni fonda ishga tushirish |
+| `scripts/stop.sh` | To'xtatish |
+| `scripts/restart.sh` | GitHub'dan yangilab, qayta ishga tushirish |
+| `scripts/logs.sh` | Loglarni ko'rish (chiqish uchun Ctrl+C bosiladi, bot to'xtamaydi) |
+
 ### Serverda (systemd)
 
 ```bash
