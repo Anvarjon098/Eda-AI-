@@ -41,3 +41,13 @@ def test_bmi_label():
     assert bmi_label(22) == "normal vazn"
     assert bmi_label(27) == "ortiqcha vazn"
     assert bmi_label(32) == "semizlik"
+
+
+def test_token_extracted_from_botfather_message(monkeypatch, tmp_path):
+    from bot import config
+    tok = "907229000:" + "A" * 35
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(config, "load_dotenv", lambda: None)
+    monkeypatch.setenv("BOT_TOKEN", f"Done! Use this token to access the HTTP API: {tok} Keep your token secure")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    assert config.load_config().bot_token == tok

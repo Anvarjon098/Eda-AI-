@@ -1,8 +1,12 @@
 import os
+import re
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
+
+
+TOKEN_RE = re.compile(r"\d{5,}:[A-Za-z0-9_-]{35}")
 
 
 @dataclass(frozen=True)
@@ -19,6 +23,10 @@ def load_config() -> Config:
     token = os.getenv("BOT_TOKEN", "").strip().strip("\"'").strip()
     if not token:
         raise SystemExit("BOT_TOKEN .env faylida ko'rsatilmagan")
+    # BotFather xabari butunligicha nusxalangan bo'lsa ham, ichidan tokenni ajratib olamiz
+    found = TOKEN_RE.search(token)
+    if found:
+        token = found.group(0)
     api_key = os.getenv("ANTHROPIC_API_KEY", "").strip().strip("\"'").strip()
     if not api_key:
         raise SystemExit("ANTHROPIC_API_KEY .env faylida ko'rsatilmagan")
