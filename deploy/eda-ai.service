@@ -1,0 +1,17 @@
+# /etc/systemd/system/eda-ai.service
+# O'rnatish: sudo cp deploy/eda-ai.service /etc/systemd/system/ && sudo systemctl enable --now eda-ai
+[Unit]
+Description=Eda AI Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=edaai
+WorkingDirectory=/opt/eda-ai
+ExecStart=/opt/eda-ai/.venv/bin/python -m bot
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
