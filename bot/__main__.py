@@ -7,6 +7,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramNotFound, TelegramUnauthorizedError
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, ErrorEvent
 
@@ -64,6 +65,16 @@ async def main() -> None:
                 pass
         return True
 
+    try:
+        me = await bot.get_me()
+    except (TelegramNotFound, TelegramUnauthorizedError):
+        await db.close()
+        await bot.session.close()
+        raise SystemExit(
+            "BOT_TOKEN noto'g'ri: Telegram uni tanimadi. @BotFather'dan tokenni to'liq "
+            "(masalan 123456789:AA... ko'rinishida) qayta nusxalab, .env fayliga yozing."
+        )
+    logging.info("Bot ishga tushdi: @%s", me.username)
     await bot.set_my_commands(COMMANDS)
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

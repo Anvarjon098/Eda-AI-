@@ -16,10 +16,10 @@ class Config:
 
 def load_config() -> Config:
     load_dotenv()
-    token = os.getenv("BOT_TOKEN", "").strip()
+    token = os.getenv("BOT_TOKEN", "").strip().strip("\"'").strip()
     if not token:
         raise SystemExit("BOT_TOKEN .env faylida ko'rsatilmagan")
-    api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    api_key = os.getenv("ANTHROPIC_API_KEY", "").strip().strip("\"'").strip()
     if not api_key:
         raise SystemExit("ANTHROPIC_API_KEY .env faylida ko'rsatilmagan")
     return Config(
