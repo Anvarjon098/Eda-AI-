@@ -65,6 +65,7 @@ Bot terminal yopilganda ham ishlayveradi va xato bilan to'xtasa, o'zi qayta ishg
 | `scripts/stop.sh` | To'xtatish |
 | `scripts/restart.sh` | GitHub'dan yangilab, qayta ishga tushirish |
 | `scripts/logs.sh` | Loglarni ko'rish (chiqish uchun Ctrl+C bosiladi, bot to'xtamaydi) |
+| `scripts/install_autostart.sh` | Avtomatik ishga tushirishni yoqish: SSH orqali kirganda, cron bo'lsa konteyner qayta yonganda ham |
 
 ### Serverda (systemd)
 

@@ -18,7 +18,7 @@ nohup setsid bash -c '
         [ "$(stat -c %s bot.log 2>/dev/null || echo 0)" -gt 5242880 ] && mv bot.log bot.log.old
         sleep 5
     done
-' "$PY" > /dev/null 2>&1 &
+' "$PY" > /dev/null 2>&1 < /dev/null &
 echo $! > bot.pid
 sleep 3
 if kill -0 "$(cat bot.pid)" 2>/dev/null; then
